@@ -26,6 +26,7 @@ interface Plan {
 interface ProductData {
   productName: string;
   productLink: string;
+  productPath: string;
   description: string;
   why_choose_des: string;
   who_need_des: string;
@@ -44,6 +45,7 @@ const ProductEdit: React.FC = () => {
   const [productData, setProductData] = useState<ProductData>({
     productName: '',
     productLink: '',
+    productPath: '',
     description: '',
     why_choose_des: '',
     who_need_des: '',
@@ -200,6 +202,18 @@ const handleFieldChange = (
           name="productLink"
           placeholder="Product Link"
           value={productData.productLink || ''}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded"
+        />
+    </div>
+
+    <div>
+    <label  className="block mb-2">Product Path :</label>
+        <input
+          type="text"
+          name="productPath"
+          placeholder="Product Path"
+          value={productData.productPath || ''}
           onChange={handleChange}
           className="w-full p-2 border border-gray-300 rounded"
         />

@@ -255,8 +255,8 @@ const ContactUs: React.FC = () => {
           <div>
             <p className="text-sm font-medium text-gray-500">Call Us</p>
             <p className="font-semibold text-[14px] text-black">Support - 44 24795144 <br/>
-Sales - 44 24795145 <br/>
-Mobile - 97109 46806</p>
+              Sales - 44 24795145 <br/>
+              Mobile - 97109 46806</p>
           </div>
         </div>
 

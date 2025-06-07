@@ -347,7 +347,7 @@ const HomePage: React.FC = () => {
           ref={pmsRef}
           initial="hidden"
           animate={pmsControls}
-          className="container mx-auto mb-6 sm:mb-0 xl:-ml-5 border border-gray-300 rounded-sm shadow-sm md:shadow-none md:border-0"
+          className="container mx-auto mb-6 sm:mb-0 xl:-ml-5  border border-gray-300 rounded-sm shadow-sm md:shadow-none md:border-0"
         >
           <div className="flex flex-col md:flex-row items-center bg-white rounded-xl">
             <motion.div variants={slideIn("left")} className="hidden md:flex w-full md:w-1/2 justify-center sm:p-4">

@@ -289,7 +289,7 @@ const ContactUs: React.FC = () => {
                   </label>
                   <PhoneInput
                     international
-                    defaultCountry="IN" as CountryCode
+                    defaultCountry="IN"
                     value={phone}
                     onChange={setPhone}
                     className="!shadow-none rounded !bg-transparent border mt-1 p-2 [&>input]:border-none [&>input]:outline-none [&>input]:bg-transparent"
