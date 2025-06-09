@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { FaArrowAltCircleRight } from "react-icons/fa";
 import CMS from "../assets/Images/CMS1.png";
 import PMS from "../assets/Images/PMS.png";
@@ -13,6 +13,15 @@ import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Header from "@/components/Header";
 import { SlCalender } from "react-icons/sl";
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+
+interface Product {
+  _id: string;
+  productPath: string;
+  name: string;
+}
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -67,14 +76,14 @@ const scaleUp = {
   },
 };
 
-const buttonHover = {
-  initial: { scale: 1 },
-  hover: {
-    scale: 1.05,
-    transition: { type: "spring", stiffness: 400, damping: 10 },
-  },
-  tap: { scale: 0.95 },
-};
+// const buttonHover = {
+//   initial: { scale: 1 },
+//   hover: {
+//     scale: 1.05,
+//     transition: { type: "spring", stiffness: 400, damping: 10 },
+//   },
+//   tap: { scale: 0.95 },
+// };
 
 function useAnimationOnScroll(): [React.RefCallback<HTMLDivElement>, AnimationControls] {
   const controls = useAnimation();
@@ -102,6 +111,21 @@ const HomePage: React.FC = () => {
   const [featuresRef, featuresControls] = useAnimationOnScroll();
   const [pmsRef, pmsControls] = useAnimationOnScroll();
 
+
+ const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const res = await fetch(`${apiUrl}/api/product`);
+      const data = await res.json();
+      setProducts(data);
+    };
+
+    fetchProducts();
+  }, []);
+
+
+  
   return (
     <div className="w-full mx-auto justify-center items-center xxl:container">
       <Header />
@@ -328,7 +352,7 @@ const HomePage: React.FC = () => {
                 className="flex justify-start"
               >
                 <Link
-                  href="/products/67dd3c6c05e8fd1803fbf0ec?fromProducts=true"
+                  href={`/products/v1/${products[0]?.productPath}/?fromProducts=true`}
                   className="mt-4 flex items-center gap-2 text-[12px] sm:text-sm text-[#F7666F] font-semibold"
                 >
                   Read more <FaArrowAltCircleRight className="mt-0.5" />
@@ -392,7 +416,7 @@ const HomePage: React.FC = () => {
                 className="flex justify-start"
               >
                 <Link
-                  href="/products/67dd428505e8fd1803fbf1d5?fromProducts=true"
+                  href={`/products/v1/${products[1]?.productPath}/?fromProducts=true`}
                   className="mt-4 flex items-center gap-2 text-[12px] sm:text-sm text-[#F7666F] font-semibold"
                 >
                   Read more <FaArrowAltCircleRight className="mt-0.5" />

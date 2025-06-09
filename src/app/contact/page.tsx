@@ -14,11 +14,11 @@ import Header from "@/components/Header";
 import PhoneInput, {
   isValidPhoneNumber} from "react-phone-number-input";
 import 'react-phone-number-input/style.css';
+import { sendWhatsappMessage } from "@/services/whatsapp/whatsappService";
 
 const service_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
 const template_ID = process.env.NEXT_PUBLIC_EMAILJS_ENQ_TEMPLATE_ID || "";
 const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
-const stromxToken = process.env.NEXT_PUBLIC_STROMX_TOKEN || "";
 const adminPhones = process.env.NEXT_PUBLIC_ADMIN_PHONES?.split(',').map((p) => p.trim()) || [];
 
 interface FormErrors {
@@ -36,174 +36,115 @@ const ContactUs: React.FC = () => {
   const [emailError, setEmailError] = useState<string>("");
   const [phone, setPhone] = useState<string | undefined>(undefined);
   const [phoneError, setPhoneError] = useState<string>("");
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+  
+  const validateEmail = async (email: string): Promise<string> => {
+    try {
+      const response = await fetch('/api/proxy-validate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const gmailTypos = [
-    'gamil.com', 'gnail.com', 'gmial.com', 'gmaill.com', 'gmail.con',
-    'gmail.co', 'gmail.om', 'gmail.cim', 'gmail.cm', 'gmai.com',
-    'gmail.comm', 'gmal.com', 'gmaul.com', 'gmail.xom', 'gmail.vom',
-    'g.mail.com', 'gmaik.com', 'gmaio.com', 'gmali.com', 'gmali.con',
-    'gmail.clm', 'gmail.coom', 'gmaiil.com', 'ggmail.com', 'gemail.com',
-    'gmmail.com', 'gmiall.com', 'gmsil.com', 'gmale.com', 'gmall.com',
-    'gmil.com', 'gmailc.om', 'gmailc.com', 'gmailm.com', 'gmali.cm',
-    'gmalil.com', 'gmial.cm', 'gmaol.com', 'gmauk.com', 'gmaul.co',
-    'gmail.ckm', 'gmail.kom', 'gmail.bom', 'gmail.dcom', 'gmaul.con', 'mail.com'
-  ];
+      if (!response.ok) return 'Email validation failed. Try again.';
 
-  const validateEmail = (email: string): string => {
-    if (!emailPattern.test(email)) return 'Please enter a valid email address.';
-    const domain = email.split('@')[1]?.toLowerCase();
-    if (domain && gmailTypos.includes(domain)) return 'Did you mean "gmail.com"?';
-    return '';
+      const result = await response.json();
+      return result.isValid ? '' : 'Please enter a valid email address.';
+    } catch (err) {
+      console.error('Email validation error:', err);
+      return 'Email validation service unavailable.';
+    }
   };
 
-  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const emailInput = e.target.value.trim();
     setEmail(emailInput);
-    const error = validateEmail(emailInput);
+    const error = await validateEmail(emailInput);
     setEmailError(error);
   };
 
-  const sendWhatsAppNotification = async (formData: {
-    name: string;
-    company: string;
-    email: string;
-    number: string | undefined;
-    location: string;
-    queries: string;
-  }) => {
-    if (!stromxToken || !adminPhones.length) {
-      console.warn("Missing Stromx token or admin phone numbers.");
-      return;
-    }
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
 
-    const messagePayload = {
-      type: "template",
-      template: {
-        name: "enquiry_ace_acesoft",
-        language: { policy: "deterministic", code: "en" },
-        components: [
-          {
-            type: "body",
-            parameters: [
-              { type: "text", text: formData.name },
-              { type: "text", text: formData.company },
-              { type: "text", text: formData.email },
-              { type: "text", text: formData.number || "" },
-              { type: "text", text: formData.location },
-              { type: "text", text: formData.queries },
-            ],
-          },
-        ],
-      },
-    };
+    const formCurrent = form.current;
+    if (!formCurrent) return;
 
-    for (const phone of adminPhones) {
-      try {
-        const response = await fetch(
-          `https://api.stromx.io/v1/message/send-message?token=${stromxToken}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...messagePayload, to: phone }),
-          }
-        );
-        const data = await response.json();
-        if (!response.ok) {
-          console.error(`WhatsApp failed for ${phone}:`, data);
-        }
-      } catch (error) {
-        console.error(`WhatsApp error for ${phone}:`, error);
-      }
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!form.current) return;
-
-    const formElements = form.current.elements as typeof form.current.elements & {
-      name: HTMLInputElement;
-      company: HTMLInputElement;
-      location: HTMLInputElement;
-      queries: HTMLTextAreaElement;
-    };
-
-    const name = formElements.name.value.trim();
-    const company = formElements.company.value.trim();
-    const location = formElements.location.value.trim();
-    const queries = formElements.queries.value.trim();
-
-    const errors: FormErrors = {};
-    let hasErrors = false;
-
-    if (!name) {
-      errors.name = "Name is required.";
-      hasErrors = true;
-    }
-    if (!company) {
-      errors.company = "Company name is required.";
-      hasErrors = true;
-    }
-
-    const emailValidationMessage = validateEmail(email);
+    const emailValidationMessage = await validateEmail(email);
     if (emailValidationMessage) {
-      errors.email = emailValidationMessage;
       setEmailError(emailValidationMessage);
-      hasErrors = true;
+      return;
     } else {
-      setEmailError("");
+      setEmailError('');
     }
 
     if (!phone || !isValidPhoneNumber(phone)) {
-      errors.number = "Valid phone number is required.";
-      setPhoneError("Valid phone number is required.");
-      hasErrors = true;
+      setPhoneError('Please enter a valid phone number.');
+      return;
     } else {
-      setPhoneError("");
+      setPhoneError('');
     }
 
-    if (!location) {
-      errors.location = "Location is required.";
-      hasErrors = true;
-    }
-
-    setFormErrors(errors);
-
-    if (hasErrors) {
-      return; 
-    }
+    
 
     const formData = {
-      name,
-      company,
+      name: (formCurrent['Name'] as HTMLInputElement)?.value || '',
+      company: formCurrent['company']?.value || '',
       email,
       number: phone,
-      location,
-      queries,
+      location: formCurrent['location']?.value || '',
+      queries: formCurrent['queries']?.value || '',
+      product: formCurrent['product']?.value || '',
     };
 
     setLoading(true);
+
     try {
-      await Promise.all([
-        emailjs.send(service_ID, template_ID, formData, publicKey),
-        sendWhatsAppNotification(formData),
-      ]);
-      alert("Your message has been sent successfully!");
-      form.current.reset();
-      setPhone(undefined);
+      await emailjs.send(service_ID, template_ID, formData, publicKey);
+      alert('Your message has been sent successfully!');
+      formCurrent.reset();
       setEmail('');
+      setPhone('');
     } catch (error) {
-      console.error("Submission error:", error);
-      alert("Something went wrong. Please try again later.");
+      console.error('Email sending failed:', error);
+      alert('There was an issue sending your message. Please try again later.');
     } finally {
       setLoading(false);
+    }
+
+    const phoneWithoutPlus = phone.replace(/^\+/, '');
+ 
+    try {
+      await sendWhatsappMessage(
+        'enquiry_ace_soft',
+        {
+          fullName: formData.name,
+          companyName: formData.company,
+          businessEmail: formData.email,
+          mobileNumber: phoneWithoutPlus,
+          location: formData.location,
+          message: formData.queries,
+        },
+        adminPhones,
+      );
+
+      await sendWhatsappMessage(
+        'customer_greetings',
+        {
+          fullName: formData.name,
+          product: formData.product,
+          siteUrl: 'https://acesoft.in',
+          imageUrl:
+            'https://res.cloudinary.com/dohyevc59/image/upload/v1749124753/Enquiry_Greetings_royzcm.jpg',
+        },
+        [phoneWithoutPlus],
+      );
+    } catch (error) {
+      console.error('WhatsApp sending error:', error);
     }
   };
 
@@ -219,10 +160,10 @@ const ContactUs: React.FC = () => {
             <h2 className="text-xl md:text-3xl font-semibold text-gray-800 mb-6">
               Connect with us and Book a Demo today!
             </h2>
-            <form ref={form} onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <form ref={form} onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label htmlFor="name" className="lg:text-lg font-medium">
+                  <label htmlFor="Name" className="lg:text-lg font-medium">
                     Name
                   </label>
                   <input
@@ -231,14 +172,8 @@ const ContactUs: React.FC = () => {
                     placeholder="Name *"
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
-                    aria-invalid={!!formErrors.name}
-                    aria-describedby="name-error"
                   />
-                  {formErrors.name && (
-                    <p id="name-error" className="text-red-500 text-sm mt-1">
-                      {formErrors.name}
-                    </p>
-                  )}
+             
                 </div>
                 <div className="flex flex-col">
                   <label htmlFor="company" className="lg:text-lg font-medium">
@@ -250,14 +185,9 @@ const ContactUs: React.FC = () => {
                     placeholder="Company Name *"
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
-                    aria-invalid={!!formErrors.company}
-                    aria-describedby="company-error"
+           
                   />
-                  {formErrors.company && (
-                    <p id="company-error" className="text-red-500 text-sm mt-1">
-                      {formErrors.company}
-                    </p>
-                  )}
+                
                 </div>
               </div>
 
@@ -273,8 +203,6 @@ const ContactUs: React.FC = () => {
                     onChange={handleEmailChange}
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
-                    aria-invalid={!!emailError}
-                    aria-describedby="email-error"
                   />
                   {emailError && (
                     <p id="email-error" className="text-red-500 text-sm mt-1">
@@ -302,7 +230,19 @@ const ContactUs: React.FC = () => {
                 </div>
               </div>
 
-              <label htmlFor="location" className="lg:text-lg font-medium">
+              
+
+              <label htmlFor="product" className="lg:text-lg font-medium">
+                Product
+              </label>
+              <input
+                type="text"
+                name="product"
+                placeholder="Enter the product name"
+                className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
+                required
+              />
+                 <label htmlFor="location" className="lg:text-lg font-medium">
                 Location
               </label>
               <input
@@ -310,29 +250,16 @@ const ContactUs: React.FC = () => {
                 name="location"
                 placeholder="Location"
                 className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
-                aria-invalid={!!formErrors.location}
-                aria-describedby="location-error"
+                required
               />
-              {formErrors.location && (
-                <p id="location-error" className="text-red-500 text-sm mt-1">
-                  {formErrors.location}
-                </p>
-              )}
-
               <label className="lg:text-lg font-medium">Queries </label>
               <textarea
                 name="queries"
                 placeholder="Queries *"
                 className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full h-24 focus:outline-none focus:ring-2 focus:ring-red-100"
                 required
-                aria-invalid={!!formErrors.queries}
-                aria-describedby="queries-error"
               ></textarea>
-              {formErrors.queries && (
-                <p id="queries-error" className="text-red-500 text-sm mt-1">
-                  {formErrors.queries}
-                </p>
-              )}
+
 
               <button
                 type="submit"

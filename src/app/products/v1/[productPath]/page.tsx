@@ -7,9 +7,9 @@ import { TiArrowForward } from "react-icons/ti";
 import { FaCircleDot } from "react-icons/fa6";
 import { MdOutlineSubdirectoryArrowRight } from "react-icons/md";
 import { motion } from "framer-motion";
-import AboutPage1 from "../../../components/AboutPage1";
-import Header1 from "../../../components/Header1";
-import Header from "../../../components/Header";
+import AboutPage1 from "../../../../components/AboutPage1";
+import Header1 from "../../../../components/Header1";
+import Header from "../../../../components/Header";
 import ContactUs from "@/components/Contact";
 import BookCard from "@/components/BookCard";
 
@@ -35,6 +35,7 @@ type Testimonial = {
 
 interface Product {
   id?: string;
+  productPath?: string;
   imageUrl?: string | string[];
   gallery?: string | string[];
   productName?: string | string[];
@@ -48,11 +49,11 @@ interface Product {
 }
 
 const ProductDetails: React.FC = () => {
-  const params = useParams();
+  // const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const id = params?.id ?? "";
+ const { productPath, id } = useParams() as { productPath: string; id: string };
 
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,16 +70,16 @@ const ProductDetails: React.FC = () => {
 
   useEffect(() => {
     fetchProduct();
-    const fromProductsPage = searchParams?.get("fromProducts") === "true";
+    const fromProductsPage = searchParams?.get("url") === "true";
 
     if (!fromProductsPage) {
       setShowNavbar(true);
       setShowNavbar1(false);
-      setShowAbout(true);
+      setShowAbout(false);
     } else {
       setShowNavbar(false);
       setShowNavbar1(true);
-      setShowAbout(false);
+      setShowAbout(true);
     }
   }, [id, searchParams]);
 
@@ -99,7 +100,7 @@ const ProductDetails: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get<Product>(`${apiUrl}/api/product/${id}`);
+      const response = await axios.get<Product>(`${apiUrl}/api/product/v1/${productPath}`);
       if (response.data) {
         setProduct(response.data);
       } else {
@@ -177,13 +178,13 @@ const ProductDetails: React.FC = () => {
   <div>
        {showNavbar1 && (
          <div>
-         <Header/>
+         <Header1/>
          </div>
         )}
 
       {showNavbar && (
          <div>
-         <Header1/>
+         <Header/>
          </div>
         )}
    
@@ -411,7 +412,7 @@ const ProductDetails: React.FC = () => {
           className="mt-8 text-gray-800 max-w-3xl mx-auto flex flex-col text-xl overflow-hidden"
           variants={stagger}
         >
-          {product?.who_need_des === "string" ?
+          {typeof product?.who_need_des === "string" ?
              product.who_need_des
                 .split(".")
                 .filter((sentence: string) => sentence.trim())

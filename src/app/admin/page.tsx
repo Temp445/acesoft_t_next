@@ -13,6 +13,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 interface Product {
   _id: string;
+  productPath: string;
   productName: string;
   description?: string;
   category?: string;
@@ -155,7 +156,7 @@ const Dashboard: React.FC = () => {
                   className="border rounded-lg shadow-sm hover:shadow-md transition overflow-hidden"
                 >
                   <div className="relative h-48 overflow-hidden">
-                    <Link href={`/product/${product._id}`}>
+                    <Link href={`/products/v1/${product.productPath}/?url=true`}>
                       <img
                         src={getImageUrl(product)}
                         alt={product.productName}
@@ -174,7 +175,7 @@ const Dashboard: React.FC = () => {
 
                     <div className="flex justify-between items-center pt-3 border-t">
                       <Link
-                        href={`/products/${product._id}`}
+                        href={`/products/v1/${product.productPath}/?url=true`}
                         className="text-blue-500 hover:text-blue-700 text-sm font-medium"
                       >
                         View Details

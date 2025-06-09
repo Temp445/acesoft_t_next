@@ -15,6 +15,7 @@ interface Product {
   description?: string;
   category: string;
   imageUrl?: string | string[];
+  productPath: string; 
 }
 
 const customOrder = [
@@ -25,6 +26,7 @@ const customOrder = [
   'Project Management',
   'Enterprise (ERP Solutions)'
 ];
+
 
 const ProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -84,9 +86,9 @@ const ProductsPage: React.FC = () => {
     return undefined;
   };
 
-  const goToProduct = (productId: string) => {
-    router.push(`/products/${productId}?fromProducts=true`);
-  };
+const goToProduct = (product: Product) => {
+  router.push(`/products/v1/${product.productPath}`);
+};
 
   return (
     <div>
@@ -151,7 +153,7 @@ const ProductsPage: React.FC = () => {
                     key={product._id}
                     className="border border-gray-200 rounded-lg shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-lg w-full max-w-sm mx-auto"
                   >
-                    <div onClick={() => goToProduct(product._id)}>
+                    <div onClick={() => goToProduct(product)}>
                       <img
                         src={getImageUrl(product)}
                         className="w-full h-60 object-cover p-2 rounded-xl border-b border-gray-200 cursor-pointer"
@@ -165,9 +167,9 @@ const ProductsPage: React.FC = () => {
                       <p className="text-xs mt-2">
                         {product.description && product.description.split(".")[0]}
                       </p>
-                      <div onClick={() => goToProduct(product._id)}>
+                      <div onClick={() => goToProduct(product)}>
                         <div className="flex justify-between mt-4">
-                          <Link href={`/products/${product._id}`} className="text-sm hover:underline flex">
+                          <Link href={`/products/v1/${product.productPath}`} className="text-sm hover:underline flex">
                             Learn More
                             <span className="mt-1 ml-1">
                               <FaArrowAltCircleRight />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, FormEvent } from "react";
+import React, { useRef, useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { MdAddIcCall, MdOutlineMail, MdOutlineSendToMobile } from "react-icons/md";
 import { FaLaptopCode } from "react-icons/fa";
 import { RiCustomerService2Fill } from "react-icons/ri";
@@ -9,54 +9,134 @@ import { TbPhoneCall } from "react-icons/tb";
 import { IoLocationOutline } from "react-icons/io5";
 import { FaLocationDot } from "react-icons/fa6"; 
 import emailjs from "@emailjs/browser";
-import { div } from "framer-motion/client";
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { sendWhatsappMessage } from "@/services/whatsapp/whatsappService";
+
+const service_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || '';
+const template_ID = process.env.NEXT_PUBLIC_EMAILJS_ENQ_TEMPLATE_ID || '';
+const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
+const adminPhones = process.env.NEXT_PUBLIC_ADMIN_PHONES?.split(',').map((p) => p.trim()) || [];
+
 
 const ContactUs: React.FC = () => {
-  const form = useRef<HTMLFormElement>(null);
-  const [emailError, setEmailError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phone, setPhone] = useState<string | undefined>('');
+  const [phoneError, setPhoneError] = useState('');
+  const form = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0); 
   }, []);
 
-  const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]{2,6}\.[a-zA-Z]{2,6}$/;
+  const validateEmail = async (email: string): Promise<string> => {
+    try {
+      const response = await fetch('/api/proxy-validate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+      if (!response.ok) return 'Email validation failed. Try again.';
+
+      const result = await response.json();
+      return result.isValid ? '' : 'Please enter a valid email address.';
+    } catch (err) {
+      console.error('Email validation error:', err);
+      return 'Email validation service unavailable.';
+    }
+  };
+
+  const handleEmailChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const emailInput = e.target.value.trim();
+    setEmail(emailInput);
+    const error = await validateEmail(emailInput);
+    setEmailError(error);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     const formCurrent = form.current;
     if (!formCurrent) return;
 
-    const emailInput = formCurrent["email"].value;
-    if (!emailPattern.test(emailInput)) {
-      setEmailError("Please enter a valid email format");
+    const emailValidationMessage = await validateEmail(email);
+    if (emailValidationMessage) {
+      setEmailError(emailValidationMessage);
       return;
     } else {
-      setEmailError("");
+      setEmailError('');
     }
+
+    if (!phone || !isValidPhoneNumber(phone)) {
+      setPhoneError('Please enter a valid phone number.');
+      return;
+    } else {
+      setPhoneError('');
+    }
+
+    
+
+    const formData = {
+      name: (formCurrent['Name'] as HTMLInputElement)?.value || '',
+      company: formCurrent['company']?.value || '',
+      email,
+      number: phone,
+      location: formCurrent['location']?.value || '',
+      queries: formCurrent['queries']?.value || '',
+      product: formCurrent['product']?.value || '',
+    };
 
     setLoading(true);
 
-    emailjs
-      .sendForm(
-        "service_yscbz1z",
-        "template_civ87mf",
-        formCurrent,
-        "9dR2KnJDZ6eO4NSee"
-      )
-      .then(
-        (response) => {
-          console.log("Email sent successfully!", response);
-          alert("Your message has been sent successfully!");
-          formCurrent.reset();
+    try {
+      await emailjs.send(service_ID, template_ID, formData, publicKey);
+      alert('Your message has been sent successfully!');
+      formCurrent.reset();
+      setEmail('');
+      setPhone('');
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      alert('There was an issue sending your message. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+
+    const phoneWithoutPlus = phone.replace(/^\+/, '');
+ 
+    try {
+      await sendWhatsappMessage(
+        'enquiry_ace_soft',
+        {
+          fullName: formData.name,
+          companyName: formData.company,
+          businessEmail: formData.email,
+          mobileNumber: phoneWithoutPlus,
+          location: formData.location,
+          message: formData.queries,
         },
-        (error) => {
-          console.error("Email sending failed:", error);
-          alert("There was an issue sending your message. Please try again later.");
-        }
-      )
-      .finally(() => setLoading(false));
+        adminPhones,
+      );
+
+      await sendWhatsappMessage(
+        'customer_greetings',
+        {
+          fullName: formData.name,
+          product: formData.product,
+          siteUrl: 'https://acesoft.in',
+          imageUrl:
+            'https://res.cloudinary.com/dohyevc59/image/upload/v1749124753/Enquiry_Greetings_royzcm.jpg',
+        },
+        [phoneWithoutPlus],
+      );
+    } catch (error) {
+      console.error('WhatsApp sending error:', error);
+    }
   };
+
 
   return (
        <div>
@@ -105,14 +185,7 @@ const ContactUs: React.FC = () => {
                     type="email"
                     name="email"
                     placeholder="Email *"
-                    onChange={(e) => {
-                      const emailInput = e.target.value;
-                      if (emailPattern.test(emailInput)) {
-                        setEmailError("");
-                      } else {
-                        setEmailError("Please enter a valid email format");
-                      }
-                    }}
+                    onChange={handleEmailChange}
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
                   />
@@ -121,32 +194,34 @@ const ContactUs: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col">
+                    <div className="flex flex-col">
                   <label htmlFor="number" className="lg:text-lg font-medium">
                     Number
                   </label>
-                  <input
-                    type="number"
-                    name="number"
-                    placeholder="Phone Number *"
-                    className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    required
-                    style={{
-                      WebkitAppearance: "none",
-                      MozAppearance: "textfield",
-                    }}
+                  <PhoneInput
+                    international
+                    defaultCountry="IN"
+                    value={phone}
+                    onChange={setPhone}
+                    className="!shadow-none rounded !bg-transparent border mt-1 p-2 [&>input]:border-none [&>input]:outline-none [&>input]:bg-transparent"
                   />
+                  {phoneError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {phoneError}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Date & Time Section */}
+          
               <div className="flex flex-col">
                 <label htmlFor="datetime" className="lg:text-lg font-medium">
-                  Preferred Date & Time
+                  Product
                 </label>
                 <input
-                  type="datetime-local"
-                  name="datetime"
+                  type="text"
+                  name="product"
+                  placeholder="Enter the product name"
                   className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                   required
                 />
@@ -160,6 +235,7 @@ const ContactUs: React.FC = () => {
                 name="location"
                 placeholder="Location"
                 className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
+                required
               />
               <label className="lg:text-lg font-medium">Queries </label>
               <textarea
