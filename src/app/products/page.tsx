@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import Header from "@/components/Header";
+import { trackConversion } from "@/lib/google";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -41,6 +42,13 @@ const ProductsPage: React.FC = () => {
     fetchProducts();
     window.scrollTo(0, 0);
   }, []);
+
+
+     trackConversion({
+        event: 'productpage_view',
+        form_id: 'n/a',
+        form_name: 'Productpage Visit'
+      });
 
   const fetchProducts = async () => {
     try {

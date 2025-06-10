@@ -22,6 +22,7 @@ import { FaUserTie } from "react-icons/fa6";
 import Count from "../../components/Count";
 import Image from "next/image";
 import Header from "@/components/Header";
+import { trackConversion } from "@/lib/google";
 
 const AboutPage = () => {
 
@@ -61,6 +62,12 @@ const AboutPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0); 
   }, []);
+
+   trackConversion({
+          event: 'aboutpage_view',
+          form_id: 'n/a',
+          form_name: 'Aboutpage Visit'
+        });
 
   return (
     
