@@ -10,6 +10,8 @@ import { IoLocationOutline } from "react-icons/io5";
 import { FaLocationDot } from "react-icons/fa6"; 
 import emailjs from "@emailjs/browser";
 import Header from "@/components/Header";
+import { trackConversion } from "../../lib/google";
+
 
 import PhoneInput, {
   isValidPhoneNumber} from "react-phone-number-input";
@@ -21,14 +23,6 @@ const template_ID = process.env.NEXT_PUBLIC_EMAILJS_ENQ_TEMPLATE_ID || "";
 const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
 const adminPhones = process.env.NEXT_PUBLIC_ADMIN_PHONES?.split(',').map((p) => p.trim()) || [];
 
-interface FormErrors {
-  name?: string;
-  company?: string;
-  email?: string;
-  number?: string;
-  location?: string;
-  queries?: string;
-}
 
 const ContactUs: React.FC = () => {
   const form = useRef<HTMLFormElement>(null);
@@ -100,6 +94,13 @@ const ContactUs: React.FC = () => {
       queries: formCurrent['queries']?.value || '',
       product: formCurrent['product']?.value || '',
     };
+
+     // Track conversion event for Google Ads
+        trackConversion({
+            event: 'form_submission',
+            form_id: 'enquiry_form',
+            form_name: 'Enquiry Form'
+        });
 
     setLoading(true);
 

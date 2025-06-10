@@ -13,6 +13,7 @@ import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Header from "@/components/Header";
 import { SlCalender } from "react-icons/sl";
+import { trackConversion } from "@/lib/google";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -76,15 +77,6 @@ const scaleUp = {
   },
 };
 
-// const buttonHover = {
-//   initial: { scale: 1 },
-//   hover: {
-//     scale: 1.05,
-//     transition: { type: "spring", stiffness: 400, damping: 10 },
-//   },
-//   tap: { scale: 0.95 },
-// };
-
 function useAnimationOnScroll(): [React.RefCallback<HTMLDivElement>, AnimationControls] {
   const controls = useAnimation();
   const [ref, inView] = useInView({
@@ -124,6 +116,14 @@ const HomePage: React.FC = () => {
     fetchProducts();
   }, []);
 
+
+  useEffect(() => {
+    trackConversion({
+      event: 'homepage_view',
+      form_id: 'n/a',
+      form_name: 'Homepage Visit'
+    });
+  }, []);
 
   
   return (

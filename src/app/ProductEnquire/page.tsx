@@ -7,6 +7,9 @@ import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { sendWhatsappMessage } from '@/services/whatsapp/whatsappService';
 
+import { trackConversion } from "../../lib/google";
+
+
 const service_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || '';
 const template_ID = process.env.NEXT_PUBLIC_EMAILJS_ENQ_TEMPLATE_ID || '';
 const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
@@ -92,6 +95,14 @@ export default function ProductEnquire() {
       queries: formCurrent['queries']?.value || '',
       product: checkedProducts.map((p) => p.value).join(', '),
     };
+
+      // Track conversion event for Google Ads
+        trackConversion({
+            event: 'form_submission',
+            form_id: 'enquiry_form',
+            form_name: 'Enquiry Form'
+        });
+
 
     setLoading(true);
 

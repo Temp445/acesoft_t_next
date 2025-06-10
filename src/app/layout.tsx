@@ -3,9 +3,6 @@ import "./globals.css";
 import Footer from "@/components/Footer";
 import BackToTop from "@/components/BackToTop";
 import { AuthProvider } from '../context/AuthContext';
-import Script from "next/script";
-
-const CONVERSION_ID = process.env.NEXT_PUBLIC_GA_ADS_CONVERSION_ID;
 
 
 export const metadata = {
@@ -22,21 +19,6 @@ export default function RootLayout({
   return (
     <html lang="en">
     <link rel="icon" href="/AceLogo.png" />
-   <head>
- 
-<Script async src={`https://www.googletagmanager.com/gtag/js?id=${CONVERSION_ID}`}/>
-
-<Script>
-{`
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', '${CONVERSION_ID}');
-  `}
-</Script>
-
-   </head>
 
     <body>
       <AuthProvider>
