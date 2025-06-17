@@ -54,12 +54,6 @@ const ContactUs: React.FC = () => {
     }
   };
 
-  const handleEmailChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const emailInput = e.target.value.trim();
-    setEmail(emailInput);
-    const error = await validateEmail(emailInput);
-    setEmailError(error);
-  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -67,6 +61,9 @@ const ContactUs: React.FC = () => {
 
     const formCurrent = form.current;
     if (!formCurrent) return;
+
+    // const TrimEmail = email.trim();
+    // setEmail(TrimEmail);
 
     const emailValidationMessage = await validateEmail(email);
     if (emailValidationMessage) {
@@ -169,7 +166,7 @@ const ContactUs: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    name="name"
+                    name="Name"
                     placeholder="Name *"
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
@@ -186,7 +183,6 @@ const ContactUs: React.FC = () => {
                     placeholder="Company Name *"
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
-           
                   />
                 
                 </div>
@@ -201,12 +197,12 @@ const ContactUs: React.FC = () => {
                     type="email"
                     name="email"
                     placeholder="Email *"
-                    onChange={handleEmailChange}
+                    onChange={(e) => setEmail(e.target.value.trim())}
                     className="text-sm md:text-[16px] border p-2 mt-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
                   />
                   {emailError && (
-                    <p id="email-error" className="text-red-500 text-sm mt-1">
+                    <p className="text-red-500 text-sm mt-1">
                       {emailError}
                     </p>
                   )}

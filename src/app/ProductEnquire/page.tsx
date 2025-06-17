@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useRef, useState, useEffect, FormEvent } from 'react';
 import emailjs from '@emailjs/browser';
 import Header from '@/components/Header';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
@@ -25,6 +25,7 @@ export default function ProductEnquire() {
   const [phone, setPhone] = useState<string | undefined>('');
   const [phoneError, setPhoneError] = useState('');
   const form = useRef<HTMLFormElement | null>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -48,13 +49,6 @@ export default function ProductEnquire() {
     }
   };
 
-  const handleEmailChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const emailInput = e.target.value.trim();
-    setEmail(emailInput);
-    const error = await validateEmail(emailInput);
-    setEmailError(error);
-  };
-
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,6 +60,9 @@ export default function ProductEnquire() {
     const emailValidationMessage = await validateEmail(email);
     if (emailValidationMessage) {
       setEmailError(emailValidationMessage);
+
+  emailInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  emailInputRef.current?.focus();
       return;
     } else {
       setEmailError('');
@@ -89,7 +86,7 @@ export default function ProductEnquire() {
     const formData = {
       name: (formCurrent['Name'] as HTMLInputElement)?.value || '',
       company: formCurrent['company']?.value || '',
-      email,
+       email,
       number: phone,
       location: formCurrent['location']?.value || '',
       queries: formCurrent['queries']?.value || '',
@@ -184,12 +181,14 @@ export default function ProductEnquire() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Business Email:</label>
               <input
+                ref={emailInputRef}
                 name="email"
                 type="email"
                 value={email}
-                onChange={handleEmailChange}
+                onChange={(e) => setEmail(e.target.value.trim())}
                 placeholder="Enter your email *"
                 className="mt-1 w-full rounded-md border px-3 py-2"
+                required
               />
               {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
             </div>
